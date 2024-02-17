@@ -278,6 +278,7 @@ public final class Lexer {
         else {
 
             // If not then throws an error
+            match("\\\\");
             throw new ParseException("Invalid escape", chars.index);
 
         }

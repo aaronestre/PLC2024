@@ -47,7 +47,7 @@ public final class Parser {
                         globals.add(parseGlobal());
 
                     }
-                    else if ( peek("FUN" ) ) {
+                    else if ( peek("FUN") ) {
 
                         functions.add(parseFunction());
 
@@ -65,7 +65,7 @@ public final class Parser {
             }
             else {
 
-                throw new ParseException("Invalud ID", tokens.get(0).getIndex());
+                throw new ParseException("Invalid ID", tokens.get(0).getIndex());
 
             }
 
@@ -138,16 +138,42 @@ public final class Parser {
             }
 
             match("=");
-            match("[");
 
-            while ( !peek("]") ) {
+            if ( peek("[") ) {
 
-                parseExpression();
-                match(",");
+                match("[");
+
+                while ( !peek("]") ) {
+
+                    parseExpression();
+                    match(",");
+
+                }
+
+                if ( peek("]") ) {
+
+                    match("]");
+
+                }
+                else {
+
+                    throw new ParseException("Missing closing bracket", tokens.get(0).getIndex());
+
+                }
 
             }
-            match("]");
-            match(";");
+
+
+            if ( peek(";") ) {
+
+                match(";");
+
+            }
+            else {
+
+                throw new ParseException("Missing semicolon", tokens.get(0).getIndex());
+
+            }
 
             return new Ast.Global(name, mutable, Optional.empty());
 
@@ -186,12 +212,30 @@ public final class Parser {
 
                 match("=");
                 value = parseExpression();
-                match(";");
+                if ( peek(";") ) {
+
+                    match(";");
+
+                }
+                else {
+
+                    throw new ParseException("Missing semicolon", tokens.get(0).getIndex());
+
+                }
                 return new Ast.Global(name, mutable, Optional.of(value));
 
             }
 
-            match(";");
+            if ( peek(";") ) {
+
+                match(";");
+
+            }
+            else {
+
+                throw new ParseException("Missing semicolon", tokens.get(0).getIndex());
+
+            }
             return new Ast.Global(name, mutable, Optional.empty());
 
         }
@@ -227,7 +271,16 @@ public final class Parser {
 
             match("=");
             value = parseExpression();
-            match(";");
+            if ( peek(";") ) {
+
+                match(";");
+
+            }
+            else {
+
+                throw new ParseException("Missing semicolon", tokens.get(0).getIndex());
+
+            }
 
             return new Ast.Global(name, mutable, Optional.of(value));
 
@@ -279,11 +332,40 @@ public final class Parser {
 
             }
 
-            match(")");
-            match("DO");
+            if ( peek(")") ) {
+
+                match(")");
+
+            }
+            else {
+
+                throw new ParseException("Closing Parentheses", tokens.get(0).getIndex());
+
+            }
+
+            if ( peek("DO") ) {
+
+                match("DO");
+
+            }
+            else {
+
+                throw new ParseException("Missing DO", tokens.get(0).getIndex());
+
+            }
+
             statements = parseBlock();
-            match("END");
-            match(";");
+
+            if ( peek("END") ) {
+
+                match("END");
+
+            }
+            else {
+
+                throw new ParseException("Missing END", tokens.get(0).getIndex());
+
+            }
 
             return new Ast.Function(name, parameters, statements);
 
@@ -306,7 +388,7 @@ public final class Parser {
 
             List<Ast.Statement> statements = new ArrayList<>();
 
-            while ( tokens.has(0) ) {
+            while ( tokens.has(0) && !(peek("END") || peek("ELSE")) ) {
 
                 statements.add(parseStatement());
 
@@ -374,6 +456,11 @@ public final class Parser {
                         match(";");
 
                     }
+                    else {
+
+                        throw new ParseException("Missing semicolon", tokens.get(0).getIndex());
+
+                    }
 
                     statement = new Ast.Statement.Assignment(leftSide, assignment);
 
@@ -381,8 +468,23 @@ public final class Parser {
 
                 }
 
+                if ( peek(";" ) ) {
 
+                    match(";");
+
+                }
+                else {
+
+                    throw new ParseException("Missing semicolon", tokens.get(0).getIndex());
+
+                }
                 statement = new Ast.Statement.Expression(leftSide);
+
+            }
+
+            if ( peek(";" ) ) {
+
+                match(";");
 
             }
 
@@ -424,7 +526,16 @@ public final class Parser {
 
             }
 
-            match(";");
+            if ( peek(";" ) ) {
+
+                match(";");
+
+            }
+            else {
+
+                throw new ParseException("Missing semicolon", tokens.get(0).getIndex());
+
+            }
 
             return new Ast.Statement.Declaration(name, value);
 
@@ -453,17 +564,37 @@ public final class Parser {
 
             condition = parseExpression();
 
-            match("DO");
+            if ( peek("DO") ) {
 
-            thenStatements = parseBlock();
+                match("DO");
 
-            if ( peek("ELSE") ) {
+                thenStatements = parseBlock();
 
-                elseStatements = parseBlock();
+                if ( peek("ELSE") ) {
+
+                    match("ELSE");
+                    elseStatements = parseBlock();
+
+                }
+
+                if ( peek("END") ) {
+
+                    match("END");
+
+                }
+                else {
+
+                    throw new ParseException("Missing END", tokens.get(0).getIndex());
+
+                }
 
             }
 
-            match("END");
+            else {
+
+                throw new ParseException("Missing DO", tokens.get(0).getIndex());
+
+            }
 
             return new Ast.Statement.If(condition, thenStatements, elseStatements);
 
@@ -501,7 +632,16 @@ public final class Parser {
             }
 
             cases.add(parseCaseStatement());
-            match("END");
+            if ( peek("END") ) {
+
+                match("END");
+
+            }
+            else {
+
+                throw new ParseException("Missing END", tokens.get(0).getIndex());
+
+            }
 
             return new Ast.Statement.Switch(condition, cases);
 
@@ -571,9 +711,27 @@ public final class Parser {
 
             value = parseExpression();
 
-            match("DO");
-            statements = parseBlock();
-            match("END");
+            if ( peek("DO") ) {
+
+                match("DO");
+                statements = parseBlock();
+                if ( peek("END") ) {
+
+                    match("END");
+
+                }
+                else {
+
+                    throw new ParseException("Missing END", tokens.get(0).getIndex());
+
+                }
+
+            }
+            else {
+
+                throw new ParseException("Missing DO", tokens.get(0).getIndex());
+
+            }
 
             return new Ast.Statement.While(value, statements);
 
@@ -853,7 +1011,17 @@ public final class Parser {
 
                     match("[");
                     Optional<Ast.Expression> offset = Optional.of(parseExpression());
-                    match("]");
+
+                    if ( peek("]") ) {
+
+                        match("]");
+
+                    }
+                    else {
+
+                        throw new ParseException("No ]", tokens.get(0).getIndex());
+
+                    }
 
                     return new Ast.Expression.Access(offset, name);
 
@@ -880,7 +1048,17 @@ public final class Parser {
 
                     }
 
-                    match(")");
+                    if ( peek(")") ) {
+
+                        match(")");
+
+                    }
+                    else {
+
+                        throw new ParseException("No )", tokens.get(0).getIndex());
+
+                    }
+
 
                     return new Ast.Expression.Function(name, arguments);
 

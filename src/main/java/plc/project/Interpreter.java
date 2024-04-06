@@ -143,8 +143,6 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
     @Override
     public Environment.PlcObject visit(Ast.Statement.Assignment ast) {
 
-        // TODO
-
         if ( ast.getReceiver() instanceof Ast.Expression.Access ) {
 
             Ast.Expression.Access access = (Ast.Expression.Access)ast.getReceiver();
@@ -263,7 +261,6 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
             }
 
-            // TODO Figure out how to get default statement
             //visit(ast.getCases().getLast());
             return Environment.NIL;
 
@@ -450,6 +447,12 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
             Environment.PlcObject RHS = visit(ast.getRight());
 
+            if ( requireType(Boolean.class, LHS ) == false ) {
+
+                return Environment.create(Boolean.FALSE);
+
+            }
+
             if ( requireType(Boolean.class, LHS) == requireType(Boolean.class, RHS) ) {
 
                 return LHS;
@@ -613,8 +616,6 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Expression.Access ast) {
-
-        // TODO
 
         if ( ast.getOffset().isPresent() ) {
 

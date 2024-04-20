@@ -125,6 +125,7 @@ public final class Parser {
         try {
 
             String name = "";
+            String type = "";
             boolean mutable;
 
             match("LIST");
@@ -133,6 +134,19 @@ public final class Parser {
             if ( peek(Token.Type.IDENTIFIER) ) {
 
                 name = tokens.get(0).getLiteral();
+                match(Token.Type.IDENTIFIER);
+
+            }
+
+            if ( peek(":") ) {
+
+                match(":");
+
+            }
+
+            if ( peek(Token.Type.IDENTIFIER) ) {
+
+                type = tokens.get(0).getLiteral();
                 match(Token.Type.IDENTIFIER);
 
             }
@@ -175,7 +189,7 @@ public final class Parser {
 
             }
 
-            return new Ast.Global(name, mutable, Optional.empty());
+            return new Ast.Global(name, type, mutable, Optional.empty());
 
         }
         catch (ParseException p) {
@@ -195,6 +209,7 @@ public final class Parser {
         try {
 
             String name = "";
+            String type = "";
             boolean mutable;
             Ast.Expression value;
 
@@ -204,6 +219,19 @@ public final class Parser {
             if ( peek(Token.Type.IDENTIFIER) ) {
 
                 name = tokens.get(0).getLiteral();
+                match(Token.Type.IDENTIFIER);
+
+            }
+
+            if ( peek(":") ) {
+
+                match(":");
+
+            }
+
+            if ( peek(Token.Type.IDENTIFIER) ) {
+
+                type = tokens.get(0).getLiteral();
                 match(Token.Type.IDENTIFIER);
 
             }
@@ -222,7 +250,7 @@ public final class Parser {
                     throw new ParseException("Missing semicolon", tokens.get(0).getIndex());
 
                 }
-                return new Ast.Global(name, mutable, Optional.of(value));
+                return new Ast.Global(name, type, mutable, Optional.of(value));
 
             }
 
@@ -236,7 +264,7 @@ public final class Parser {
                 throw new ParseException("Missing semicolon", tokens.get(0).getIndex());
 
             }
-            return new Ast.Global(name, mutable, Optional.empty());
+            return new Ast.Global(name, type, mutable, Optional.empty());
 
         }
         catch (ParseException p) {
@@ -256,6 +284,7 @@ public final class Parser {
         try {
 
             String name = "";
+            String type = "";
             boolean mutable;
             Ast.Expression value;
 
@@ -265,6 +294,19 @@ public final class Parser {
             if ( peek(Token.Type.IDENTIFIER) ) {
 
                 name = tokens.get(0).getLiteral();
+                match(Token.Type.IDENTIFIER);
+
+            }
+
+            if ( peek(":") ) {
+
+                match(":");
+
+            }
+
+            if ( peek(Token.Type.IDENTIFIER) ) {
+
+                type = tokens.get(0).getLiteral();
                 match(Token.Type.IDENTIFIER);
 
             }
@@ -282,7 +324,7 @@ public final class Parser {
 
             }
 
-            return new Ast.Global(name, mutable, Optional.of(value));
+            return new Ast.Global(name, type, mutable, Optional.of(value));
 
         }
         catch (ParseException p) {
@@ -302,6 +344,8 @@ public final class Parser {
         try {
 
             String name = "";
+            String type = "";
+            List<String> parameterTypes = new ArrayList<>();
             List<String> parameters = new ArrayList<>();
             List<Ast.Statement> statements = new ArrayList<>();
 
@@ -314,6 +358,7 @@ public final class Parser {
 
             }
 
+
             match("(");
 
             while ( !peek(")") ) {
@@ -324,6 +369,20 @@ public final class Parser {
                     match(Token.Type.IDENTIFIER);
 
                 }
+
+                if ( peek(":") ) {
+
+                    match(":");
+
+                }
+
+                if ( peek(Token.Type.IDENTIFIER) ) {
+
+                    parameterTypes.add(tokens.get(0).getLiteral());
+                    match(Token.Type.IDENTIFIER);
+
+                }
+
                 if ( peek(",") ) {
 
                     match(",");
@@ -340,6 +399,19 @@ public final class Parser {
             else {
 
                 throw new ParseException("Closing Parentheses", tokens.get(0).getIndex());
+
+            }
+
+            if ( peek(":") ) {
+
+                match(":");
+
+            }
+
+            if ( peek(Token.Type.IDENTIFIER) ) {
+
+                type = tokens.get(0).getLiteral();
+                match(Token.Type.IDENTIFIER);
 
             }
 
@@ -367,7 +439,7 @@ public final class Parser {
 
             }
 
-            return new Ast.Function(name, parameters, statements);
+            return new Ast.Function(name, parameters, parameterTypes, Optional.of(type), statements);
 
         }
         catch (ParseException p) {
@@ -509,6 +581,7 @@ public final class Parser {
         try {
 
             String name = "";
+            String type = "";
             Optional<Ast.Expression> value = Optional.empty();
             match("LET");
 
@@ -516,6 +589,24 @@ public final class Parser {
 
                 name = tokens.get(0).getLiteral();
                 match(Token.Type.IDENTIFIER);
+
+            }
+
+            if ( peek(":") ) {
+
+                match(":");
+
+            }
+
+            if ( peek(Token.Type.IDENTIFIER) ) {
+
+                type = tokens.get(0).getLiteral();
+                match(Token.Type.IDENTIFIER);
+
+            }
+            else {
+
+                type = null;
 
             }
 
@@ -537,7 +628,15 @@ public final class Parser {
 
             }
 
-            return new Ast.Statement.Declaration(name, value);
+
+            if ( type != null ) {
+
+                return new Ast.Statement.Declaration(name, Optional.of(type), value);
+
+            }
+
+            return new Ast.Statement.Declaration(name, Optional.empty(), value);
+
 
         }
         catch (ParseException p) {

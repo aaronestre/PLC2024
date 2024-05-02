@@ -30,26 +30,33 @@ public final class Analyzer implements Ast.Visitor<Void> {
     @Override
     public Void visit(Ast.Source ast) {
 
-        Environment.Function func = scope.lookupFunction("main", 0);
+        boolean main = false;
 
-        if ( func != null && func.getReturnType() == Environment.Type.INTEGER && func.getArity() == 0 ) {
+        for ( Ast.Global global : ast.getGlobals() ) {
 
-            for ( Ast.Global global : ast.getGlobals() ) {
+            visit(global);
 
-                visit(global);
+        }
 
-            }
+        for ( Ast.Function function : ast.getFunctions() ) {
 
-            for ( Ast.Function function : ast.getFunctions() ) {
+            visit(function);
 
-                visit(function);
+        }
+
+        for ( Ast.Function function : ast.getFunctions() ) {
+
+            if ( function.getName().equals("main")) {
+
+                main = true;
 
             }
 
         }
-        else {
 
-            throw new RuntimeException("No/Invalid Main function");
+        if ( !main ) {
+
+            throw new RuntimeException("No main present");
 
         }
 
@@ -69,7 +76,7 @@ public final class Analyzer implements Ast.Visitor<Void> {
             Environment.Type tyoe = Environment.getType(ast.getTypeName());
 
 
-            scope.defineVariable(name, name, tyoe,true,Environment.NIL);
+            scope.defineVariable(name, name, tyoe,true, Environment.NIL);
 
         }
         else {
@@ -640,6 +647,8 @@ public final class Analyzer implements Ast.Visitor<Void> {
     public Void visit(Ast.Expression.PlcList ast) {
 
         for ( Ast.Expression expr : ast.getValues() ) {
+
+
 
             requireAssignable(ast.getType(), expr.getType());
 

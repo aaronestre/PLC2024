@@ -149,12 +149,17 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
             if ( access.getOffset().isPresent() ) {
 
+                Ast.Expression.Literal value = (Ast.Expression.Literal)ast.getValue();
+
                 Environment.PlcObject lObj = visit(access);
                 Environment.PlcObject offset = visit(access.getOffset().get());
-                int index = ((BigInteger) offset.getValue()).intValue();
-                List<Ast.Expression> _list = requireType(List.class, lObj);
-                _list.set(index, (Ast.Expression.Literal)((Ast.Expression.Literal) ast.getValue()).getLiteral());
+
+                List<Object> _list = requireType(List.class, scope.lookupVariable(access.getName()).getValue());
+                BigInteger off = (BigInteger) offset.getValue();
+
+                _list.set(off.intValue(), value.getLiteral());
                 Environment.PlcObject updated = Environment.create(_list);
+
                 scope.lookupVariable(access.getName()).setValue(updated);
 
             }
@@ -243,34 +248,18 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
     @Override
     public Environment.PlcObject visit(Ast.Statement.Switch ast) {
 
-        try {
+        for ( Ast.Statement.Case _case : ast.getCases() ) {
 
-            scope = new Scope(scope);
+            if ( _case.getValue().equals(ast.getCondition()) ) {
 
-            for ( Ast.Statement.Case _case : ast.getCases() ) {
-
-                System.out.println(_case.getValue().toString());
-                System.out.println(ast.getCondition().toString());
-
-                if ( _case.getValue().equals(ast.getCondition()) ) {
-
-                    visit(_case);
-                    return Environment.NIL;
-
-                }
+                visit(_case);
+                return Environment.NIL;
 
             }
 
-            //visit(ast.getCases().getLast());
-            return Environment.NIL;
-
-
         }
-        finally {
 
-            scope = scope.getParent();
-
-        }
+        return Environment.NIL;
 
     }
 
@@ -665,7 +654,16 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
     @Override
     public Environment.PlcObject visit(Ast.Expression.PlcList ast) {
 
-        return Environment.create(ast.getValues());
+
+        List<Object> values = new ArrayList<>();
+        for ( int a = 0; a < ast.getValues().size(); a++ ) {
+
+            Ast.Expression.Literal val = (Ast.Expression.Literal) ast.getValues().get(a);
+            values.add(val.getLiteral());
+
+        }
+
+        return Environment.create(values);
 
     }
 

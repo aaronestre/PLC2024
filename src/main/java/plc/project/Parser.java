@@ -28,6 +28,22 @@ public final class Parser {
         this.tokens = new TokenStream(tokens);
     }
 
+    public ParseException PEHelper(String message) {
+
+        if ( !tokens.has(0) ) {
+
+            return new ParseException(message, tokens.get(-1).getIndex() + tokens.get(-1).getLiteral().length());
+
+        }
+        else {
+
+            return new ParseException(message, tokens.get(0).getIndex());
+
+
+        }
+
+    }
+
     /**
      * Parses the {@code source} rule.
      */
@@ -69,8 +85,6 @@ public final class Parser {
 
             }
 
-
-
         }
         catch ( ParseException p ) {
 
@@ -90,23 +104,33 @@ public final class Parser {
 
         try {
 
-            if ( peek("LIST") ) {
+            if ( peek(Token.Type.IDENTIFIER) ) {
 
-                global = parseList();
+                if ( peek("LIST") ) {
 
-            }
-            else if ( peek("VAR") ) {
+                    global = parseList();
 
-                global = parseMutable();
+                }
+                else if ( peek("VAR") ) {
+
+                    global = parseMutable();
+
+                }
+                else {
+
+                    global = parseImmutable();
+
+                }
+
+                return global;
 
             }
             else {
 
-                global = parseImmutable();
+                throw PEHelper("No Identifier");
 
             }
 
-            return global;
 
         }
         catch ( ParseException p ) {
@@ -128,6 +152,8 @@ public final class Parser {
             String type = "";
             boolean mutable;
 
+            List<Ast.Expression> values = new ArrayList<>();
+
             match("LIST");
             mutable = true;
 
@@ -143,11 +169,21 @@ public final class Parser {
                 match(":");
 
             }
+            else {
+
+                throw PEHelper("no operator");
+
+            }
 
             if ( peek(Token.Type.IDENTIFIER) ) {
 
                 type = tokens.get(0).getLiteral();
                 match(Token.Type.IDENTIFIER);
+
+            }
+            else {
+
+                throw PEHelper("no type");
 
             }
 
@@ -159,7 +195,9 @@ public final class Parser {
 
                 while ( !peek("]") ) {
 
-                    parseExpression();
+                    Ast.Expression.Literal value = (Ast.Expression.Literal) parseExpression();
+
+                    values.add(value);
                     match(",");
 
                 }
@@ -185,11 +223,13 @@ public final class Parser {
             }
             else {
 
-                throw new ParseException("Missing semicolon", tokens.get(0).getIndex());
+                throw PEHelper("Missing semicolom");
 
             }
 
-            return new Ast.Global(name, type, mutable, Optional.empty());
+
+            Ast.Expression.PlcList list = new Ast.Expression.PlcList(values);
+            return new Ast.Global(name, type, mutable, Optional.of(list));
 
         }
         catch (ParseException p) {
@@ -228,11 +268,21 @@ public final class Parser {
                 match(":");
 
             }
+            else {
+
+                throw PEHelper("No operator");
+
+            }
 
             if ( peek(Token.Type.IDENTIFIER) ) {
 
                 type = tokens.get(0).getLiteral();
                 match(Token.Type.IDENTIFIER);
+
+            }
+            else {
+
+                throw PEHelper("No type");
 
             }
 
@@ -261,7 +311,7 @@ public final class Parser {
             }
             else {
 
-                throw new ParseException("Missing semicolon", tokens.get(0).getIndex());
+                throw PEHelper("Missing semicolon");
 
             }
             return new Ast.Global(name, type, mutable, Optional.empty());
@@ -303,11 +353,21 @@ public final class Parser {
                 match(":");
 
             }
+            else {
+
+                throw PEHelper("Missing operator");
+
+            }
 
             if ( peek(Token.Type.IDENTIFIER) ) {
 
                 type = tokens.get(0).getLiteral();
                 match(Token.Type.IDENTIFIER);
+
+            }
+            else {
+
+                throw PEHelper("Missing type");
 
             }
 
@@ -320,7 +380,7 @@ public final class Parser {
             }
             else {
 
-                throw new ParseException("Missing semicolon", tokens.get(0).getIndex());
+                throw PEHelper("Missing semicolon");
 
             }
 
@@ -357,9 +417,23 @@ public final class Parser {
                 match(Token.Type.IDENTIFIER);
 
             }
+            else {
+
+                throw PEHelper("Missing name");
+
+            }
 
 
-            match("(");
+            if ( peek("(") ) {
+
+                match("(");
+
+            }
+            else {
+
+                throw PEHelper("Missing (");
+
+            }
 
             while ( !peek(")") ) {
 
@@ -375,6 +449,11 @@ public final class Parser {
                     match(":");
 
                 }
+                else {
+
+                    throw PEHelper("Missing operator");
+
+                }
 
                 if ( peek(Token.Type.IDENTIFIER) ) {
 
@@ -382,10 +461,21 @@ public final class Parser {
                     match(Token.Type.IDENTIFIER);
 
                 }
+                else {
+
+                    throw PEHelper("Missing type");
+
+                }
 
                 if ( peek(",") ) {
 
                     match(",");
+
+                    if ( peek("(") ) {
+
+                        throw PEHelper("Trailing comma");
+
+                    }
 
                 }
 
@@ -398,22 +488,31 @@ public final class Parser {
             }
             else {
 
-                throw new ParseException("Closing Parentheses", tokens.get(0).getIndex());
+                throw PEHelper("Missing )");
 
             }
+
 
             if ( peek(":") ) {
 
                 match(":");
 
+                if ( peek(Token.Type.IDENTIFIER) ) {
+
+                    type = tokens.get(0).getLiteral();
+                    match(Token.Type.IDENTIFIER);
+
+                }
+                else {
+
+                    throw PEHelper("Missing type");
+
+                }
+
             }
 
-            if ( peek(Token.Type.IDENTIFIER) ) {
 
-                type = tokens.get(0).getLiteral();
-                match(Token.Type.IDENTIFIER);
 
-            }
 
             if ( peek("DO") ) {
 
@@ -422,7 +521,7 @@ public final class Parser {
             }
             else {
 
-                throw new ParseException("Missing DO", tokens.get(0).getIndex());
+                throw PEHelper("Missing DO");
 
             }
 
@@ -435,7 +534,7 @@ public final class Parser {
             }
             else {
 
-                throw new ParseException("Missing END", tokens.get(0).getIndex());
+                throw PEHelper("Missind END");
 
             }
 
@@ -460,7 +559,7 @@ public final class Parser {
 
             List<Ast.Statement> statements = new ArrayList<>();
 
-            while ( tokens.has(0) && !(peek("END") || peek("ELSE")) ) {
+            while ( tokens.has(0) && !(peek("END") || peek("ELSE") || peek("DEFAULT") || peek("CASE")) ) {
 
                 statements.add(parseStatement());
 
@@ -496,6 +595,16 @@ public final class Parser {
             else if ( peek("RETURN") ) {
 
                 statement = parseReturnStatement();
+                if ( peek(";" ) ) {
+
+                    match(";");
+
+                }
+                else {
+
+                    throw PEHelper("Missing semicolon");
+
+                }
 
             }
             else if ( peek("SWITCH") ) {
@@ -530,10 +639,9 @@ public final class Parser {
                     }
                     else {
 
-                        throw new ParseException("Missing semicolon", tokens.get(0).getIndex());
+                        throw PEHelper("Missing semicolon");
 
                     }
-
                     statement = new Ast.Statement.Assignment(leftSide, assignment);
 
                     return statement;
@@ -547,16 +655,11 @@ public final class Parser {
                 }
                 else {
 
-                    throw new ParseException("Missing semicolon", tokens.get(0).getIndex());
+                    throw PEHelper("Missing semicolon");
 
                 }
+
                 statement = new Ast.Statement.Expression(leftSide);
-
-            }
-
-            if ( peek(";" ) ) {
-
-                match(";");
 
             }
 
@@ -591,24 +694,36 @@ public final class Parser {
                 match(Token.Type.IDENTIFIER);
 
             }
+            else {
+
+                throw PEHelper("Missing name");
+
+            }
 
             if ( peek(":") ) {
 
                 match(":");
 
-            }
+                if ( peek(Token.Type.IDENTIFIER) ) {
 
-            if ( peek(Token.Type.IDENTIFIER) ) {
+                    type = tokens.get(0).getLiteral();
+                    match(Token.Type.IDENTIFIER);
 
-                type = tokens.get(0).getLiteral();
-                match(Token.Type.IDENTIFIER);
+                }
+                else {
+
+                    type = "null";
+
+                }
 
             }
             else {
 
-                type = null;
+                type = "null";
 
             }
+
+
 
             if ( peek("=") ) {
 
@@ -624,12 +739,12 @@ public final class Parser {
             }
             else {
 
-                throw new ParseException("Missing semicolon", tokens.get(0).getIndex());
+                throw PEHelper("Missing semicolon");
 
             }
 
 
-            if ( type != null ) {
+            if ( !type.equals("null") ) {
 
                 return new Ast.Statement.Declaration(name, Optional.of(type), value);
 
@@ -683,7 +798,7 @@ public final class Parser {
                 }
                 else {
 
-                    throw new ParseException("Missing END", tokens.get(0).getIndex());
+                    throw PEHelper("Missing END");
 
                 }
 
@@ -691,7 +806,7 @@ public final class Parser {
 
             else {
 
-                throw new ParseException("Missing DO", tokens.get(0).getIndex());
+                throw PEHelper("Missing DO");
 
             }
 
@@ -720,13 +835,24 @@ public final class Parser {
 
             condition = parseExpression();
 
-            if ( peek("CASE" ) ) {
+            if ( peek("CASE" ) || peek("DEFAULT") ) {
 
                 while ( peek("CASE") ) {
 
                     cases.add(parseCaseStatement());
 
                 }
+
+                if ( peek("DEFAULT") ) {
+
+                    cases.add(parseCaseStatement());
+
+                }
+
+            }
+            else {
+
+                throw PEHelper("Missing CASE");
 
             }
 
@@ -738,7 +864,7 @@ public final class Parser {
             }
             else {
 
-                throw new ParseException("Missing END", tokens.get(0).getIndex());
+                throw PEHelper("Missing END");
 
             }
 
@@ -821,14 +947,14 @@ public final class Parser {
                 }
                 else {
 
-                    throw new ParseException("Missing END", tokens.get(0).getIndex());
+                    throw PEHelper("Missing END");
 
                 }
 
             }
             else {
 
-                throw new ParseException("Missing DO", tokens.get(0).getIndex());
+                throw PEHelper("Missing DO");
 
             }
 
@@ -1128,6 +1254,7 @@ public final class Parser {
                 else if ( peek("(") ) {
 
                     match("(");
+
                     List<Ast.Expression> arguments = new ArrayList<>();
                     while ( !peek(")") ) {
 
